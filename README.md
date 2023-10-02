@@ -41,82 +41,102 @@ https://drawsql.app/teams/eugene-lasevich/diagrams/dmadbms-2
 - Просмотр предложений.
 - Оформление заказа.
 - Отмена заказа.
-Дополнительные сущности для функционирования системы и их
-свойства:
 
-Предложение:
-Апартаменты (apartment_id): int
-Внешний ключ, связанный с таблицей "Апартаменты" (Apartments).
-Стоимость за сутки (price_per_night): double precision
-Дни проживания (stay_days): int
-Страна (country): varchar(255)
-Адрес (address): varchar(255)
+1. Предложение:
+   
+    поля:
+    
+       Апартаменты (apartment_id): int
+       Внешний ключ, связанный с таблицей "Апартаменты" (Apartments).
+       Стоимость за сутки (price_per_night): double precision
+       Дни проживания (stay_days): int
+       Страна (country): varchar(255)
+       Адрес (address): varchar(255)
+   
+2. Апартаменты:
+   
+    поля:
+   
+       Тип (apartment_type): varchar(255)
+       Количество комнат (num_of_rooms): int
+       Количество этажей (num_of_floors): int
+       Количество спальных мест (num_of_beds): int
 
-Апартаменты:
-Тип (apartment_type): varchar(255)
-Количество комнат (num_of_rooms): int
-Количество этажей (num_of_floors): int
-Количество спальных мест (num_of_beds): int
+3. Заказ:
 
-Заказ:
-Предложение (listing_id): int
-Внешний ключ, связанный с таблицей "Предложение" (offers).
-Итоговая цена (total_price): double precision
-Дата (order_date): date
-Заказчик (customer_id): int
-Внешний ключ, связанный с таблицей "Пользоваетли" (Users).
+   поля:
+   
+       Предложение (listing_id): int
+       Внешний ключ, связанный с таблицей "Предложение" (offers).
+       Итоговая цена (total_price): double precision
+       Дата (order_date): date
+       Заказчик (customer_id): int
+       Внешний ключ, связанный с таблицей "Пользоваетли" (Users).
 
-Вопрос:
-Пользоваетель (client_id): int
-Внешний ключ, связанный с таблицей "Пользователи" (Users).
-Статус (status): bool
-Вопрос (question_text): varchar(255)
-Ответ (answer_text): varchar(255)
+4. Вопрос:
 
-Тип апартаментов:
-Название (type_name): varchar(255)
+   поля:
+   
+       Пользоваетель (client_id): int
+       Внешний ключ, связанный с таблицей "Пользователи" (Users).
+       Статус (status): bool
+       Вопрос (question_text): varchar(255)
+       Ответ (answer_text): varchar(255)
 
-Действия (ActionLog):
-Действие (action): varchar(255)
-Дата (action_date): date
-Пользователь (user_id): int
-Внешний ключ, связанный с таблицей "Пользователи" (Users).
-Описание (description): varchar(255)
+5. Тип апартаментов:
+   
+   поля:
+   
+       Название (type_name): varchar(255)
+       Действия (ActionLog):
+       Действие (action): varchar(255)
+       Дата (action_date): date
+       Пользователь (user_id): int
+       Внешний ключ, связанный с таблицей "Пользователи" (Users).
+       Описание (description): varchar(255)
 
-Отзывы (Reviews):
-Текст (review_text): varchar(255)
-Оценка (rating): int
-Пользователь (user_id): int
-Внешний ключ, связанный с таблицей "Клиенты" (Clients).
-Предложение (listing_id): int
-Внешний ключ, связанный с таблицей "Предложение" (Listings).
+6. Отзывы (Reviews):
+   
+   поля:
+   
+       Текст (review_text): varchar(255)
+       Оценка (rating): int
+       Пользователь (user_id): int
+       Внешний ключ, связанный с таблицей "Клиенты" (Clients).
+       Предложение (listing_id): int
+       Внешний ключ, связанный с таблицей "Предложение" (Listings).
 
-Акции (Promotions):
-Название (promotion_name): varchar(255)
-Описание (description): varchar(255)
-Скидка (discount): decimal
-Дата (promotion_date): date
-Предложение (offer_id): int
-Внешний ключ, связанный с таблицей "Предложение" (Listings).
+7. Акции (Promotions):
+   
+   поля:
+   
+       Название (promotion_name): varchar(255)
+       Описание (description): varchar(255)
+       Скидка (discount): decimal
+       Дата (promotion_date): date
+       Предложение (offer_id): int
+       Внешний ключ, связанный с таблицей "Предложение" (Listings).
 
-Роли (Roles):
-Тип роли (role_type): varchar(255)
-Пользователь (user_id): int
-Внешний ключ, связанный с таблицей "Клиенты" (Clients).
+8. Роли (Roles):
+   поля:
+   
+       Тип роли (role_type): varchar(255)
+       Пользователь (user_id): int
+       Внешний ключ, связанный с таблицей "Клиенты" (Clients).
 
 Связи:
-Один ко одному
- Апартменты - Предложение
+       Один ко одному:
+       Апартменты - Предложение
 
-Многоие ко одному:
-Предложения - Закакзы
-Отзывы - Предложения
-Отзыввы - Пользоветели
-Пользоваетель - Роли
-Пользователи - Дейсвия
-Апартамаенты - Тип
-Акции - Предложения
-Заказы - Пользователь
+       Многоие ко одному:
+       Предложения - Закакзы
+       Отзывы - Предложения
+       Отзыввы - Пользоветели
+       Пользоваетель - Роли
+       Пользователи - Дейсвия
+       Апартамаенты - Тип
+       Акции - Предложения
+       Заказы - Пользователь
 
 Многие ко многим
 Пользователь - Вопросы
