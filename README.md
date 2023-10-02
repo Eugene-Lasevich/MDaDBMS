@@ -124,6 +124,12 @@ https://drawsql.app/teams/eugene-lasevich/diagrams/dmadbms-2
        Пользователь (user_id): int
        Внешний ключ, связанный с таблицей "Клиенты" (Clients).
 
+9. Удобства(RoomAmenities):    
+    поля:
+   
+       Наимнование (name): varchar(255)
+       Описание (discription): varchar(255)
+
 Связи:
        Один ко одному:
        Апартменты - Предложение
@@ -139,7 +145,7 @@ https://drawsql.app/teams/eugene-lasevich/diagrams/dmadbms-2
        Заказы - Пользователь
 
 Многие ко многим
-Пользователь - Вопросы
+Апартаменты - Удобства
 
 
 
