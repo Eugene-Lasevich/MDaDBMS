@@ -145,6 +145,147 @@ def create_table_from_columns(root, table_columns):
 
     return table_frame
 
+def load_data(root, conn, table_name='actionlog'):
+    try:
+        with conn.cursor() as cursor:
+            query = f"SELECT * FROM {table_name}"
+            cursor.execute(query)
+            results = cursor.fetchall()
+
+            # Create Treeview widget
+            treeview = ttk.Treeview(root)
+            treeview["columns"] = [column_name for column_name, in get_table_columns(table_name, conn)]
+            treeview.heading("#0", text="", anchor="w")
+            treeview.column("#0", anchor="w", width=1)
+
+            for column_name, in get_table_columns(table_name, conn):
+                treeview.heading(column_name, text=column_name)
+                treeview.column(column_name, anchor="w", width=100)
+
+            treeview.pack()
+
+            # Fill Treeview with data
+            for row in results:
+                treeview.insert("", "end", values=row)
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+class CreateOfferWindow:
+    def __init__(self, root, conn):
+        self.root = root
+        self.conn = conn
+
+        self.create_order_window = tk.Toplevel(root)
+        self.create_order_window.title("Create Order")
+
+        # Fetch data for dropdown list
+        apartment_data = self.fetch_apartment_data()
+
+        # Dropdown for apartment selection
+        self.apartment_label = tk.Label(self.create_order_window, text="Apartment:")
+        self.apartment_var = tk.StringVar()
+        self.apartment_dropdown = ttk.Combobox(self.create_order_window, textvariable=self.apartment_var, values=apartment_data)
+        self.apartment_label.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
+        self.apartment_dropdown.grid(row=0, column=1, padx=10, pady=10, sticky=tk.W)
+
+        # Other entry fields for order details
+        self.price_label = tk.Label(self.create_order_window, text="Price per Night:")
+        self.price_entry = tk.Entry(self.create_order_window)
+        self.price_label.grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
+        self.price_entry.grid(row=1, column=1, padx=10, pady=10, sticky=tk.W)
+
+        self.stay_days_label = tk.Label(self.create_order_window, text="Stay Days:")
+        self.stay_days_entry = tk.Entry(self.create_order_window)
+        self.stay_days_label.grid(row=2, column=0, padx=10, pady=10, sticky=tk.W)
+        self.stay_days_entry.grid(row=2, column=1, padx=10, pady=10, sticky=tk.W)
+
+        self.country_label = tk.Label(self.create_order_window, text="Country:")
+        self.country_entry = tk.Entry(self.create_order_window)
+        self.country_label.grid(row=3, column=0, padx=10, pady=10, sticky=tk.W)
+        self.country_entry.grid(row=3, column=1, padx=10, pady=10, sticky=tk.W)
+
+        self.address_label = tk.Label(self.create_order_window, text="Address:")
+        self.address_entry = tk.Entry(self.create_order_window)
+        self.address_label.grid(row=4, column=0, padx=10, pady=10, sticky=tk.W)
+        self.address_entry.grid(row=4, column=1, padx=10, pady=10, sticky=tk.W)
+
+        # Button to submit the order
+        self.submit_button = tk.Button(self.create_order_window, text="Submit Order", command=self.submit_order)
+        self.submit_button.grid(row=5, column=0, columnspan=2, pady=20)
+
+    def fetch_apartment_data(self):
+        try:
+            with self.conn.cursor() as cursor:
+                query = """
+                SELECT
+                    type_name,
+                    num_of_floors,
+                    num_of_rooms,
+                    num_of_beds,
+                    apartment_type
+                FROM
+                    apartments
+                LEFT JOIN apartmenttypes ON apartments.apartment_type::int = apartmenttypes.id;
+                """
+                cursor.execute(query)
+                apartment_data = cursor.fetchall()
+                return [f"{data[0]} - {data[1]} floors, {data[2]} rooms, {data[3]} beds" for data in apartment_data]
+        except Exception as e:
+            print(f"Error fetching apartment data: {e}")
+            return []
+
+    def validate_numeric_input(self, value):
+        try:
+            float_value = float(value)
+            if float_value < 0:
+                return False
+            return True
+        except ValueError:
+            return False
+
+    def submit_order(self):
+        try:
+            selected_apartment = self.apartment_var.get()
+            print(self.apartment_var.get())
+            price_per_night = self.price_entry.get()
+            stay_days = self.stay_days_entry.get()
+            country = self.country_entry.get()
+            address = self.address_entry.get()
+
+
+            if not self.validate_numeric_input(price_per_night) or not self.validate_numeric_input(stay_days):
+                tk.messagebox.showerror("Error", "Invalid numeric input for price per night or stay days")
+                return
+
+            if not selected_apartment or not country or not address:
+                tk.messagebox.showerror("Error", "All fields must be filled")
+                return
+
+            with self.conn.cursor() as cursor:
+                apartment_type = selected_apartment.split(" - ")[0]
+                cursor.execute("SELECT id FROM apartmenttypes WHERE type_name = %s", (apartment_type,))
+                apartment_id = cursor.fetchone()[0]
+
+                insert_query = """
+                INSERT INTO Offers (apartment_id, price_per_night, stay_days, country, address)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id_offer;
+                """
+                cursor.execute(insert_query, (apartment_id, price_per_night, stay_days, country, address))
+                offer_id = cursor.fetchone()[0]
+
+                self.conn.commit()
+
+                tk.messagebox.showinfo("Success", f"Offer submitted successfully! Offer ID: {offer_id}")
+
+                # Close the create_order_window
+                self.create_order_window.destroy()
+
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"An error occurred: {e}")
+
 class AdminMainWindow:
     def __init__(self, root, conn, admin_id):
         self.root = root
@@ -156,61 +297,31 @@ class AdminMainWindow:
 
         self.treeview = ttk.Treeview(self.root)
 
-        self.button_load_data = tk.Button(self.root, text="Load data", command=self.load_data)
+        self.button_load_data = tk.Button(self.root, text="Load data", command=self.load_data_1)
         self.button_create_offer = tk.Button(self.root, text="Create Offer", command=self.create_offer)
-        self.button_create_apartment = tk.Button(self.root, text="Create Apartment", command=self.create_apartment)
         self.button_update_user = tk.Button(self.root, text="Update User", command=self.update_user)
         self.button_delete_user = tk.Button(self.root, text="Delete User", command=self.delete_user)
         self.button_add_review = tk.Button(self.root, text="Add Review", command=self.add_review)
 
         self.button_load_data.pack()
         self.button_create_offer.pack()
-        self.button_create_apartment.pack()
         self.button_update_user.pack()
         self.button_delete_user.pack()
         self.button_add_review.pack()
 
-    def load_data(self, name ='actionlog'):
-        try:
-            with self.conn.cursor() as cursor:
-                table_name = name  # Replace with the name of your table
-                query = f"SELECT * FROM {table_name}"
-                cursor.execute(query)
-                results = cursor.fetchall()
-
-                for item in self.treeview.get_children():
-                    self.treeview.delete(item)
-
-                table_columns = get_table_columns(table_name, self.conn)
-                # table_frame = create_table_from_columns(self.root, table_columns)
-
-                # Create Treeview widget
-                self.treeview = ttk.Treeview(self.root)
-                self.treeview["columns"] = [column_name for column_name, in table_columns]
-                self.treeview.heading("#0", text="", anchor="w")
-                self.treeview.column("#0", anchor="w", width=1)
-
-                for column_name, in table_columns:
-                    self.treeview.heading(column_name, text=column_name)
-                    self.treeview.column(column_name, anchor="w", width=100)
-
-                self.treeview.pack()
-
-                # Fill Treeview with data
-                for row in results:
-                    self.treeview.insert("", "end", values=row)
-
-        except Exception as e:
-            print(f"Error: {e}")
+    def load_data_1(self, name ='actionlog'):
+        load_data(self.root,self.conn,name)
 
     def create_offer(self):
-        self.load_data('users')
+        create_order_window = CreateOfferWindow(root, self.conn)
 
-    def create_apartment(self):
-        # Реализация создания апартаментов
-        pass
+        # Ждем, пока окно заказа не будет закрыто
+        root.wait_window(create_order_window.create_order_window)
 
-    def update_user(self):
+        # После закрытия окна заказа выполняем load_data
+        load_data(self.root, self.conn, 'offers')
+
+    def update_user_role(self):
         # Реализация обновления пользователя
         pass
 
