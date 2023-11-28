@@ -286,6 +286,72 @@ class CreateOfferWindow:
         except Exception as e:
             tk.messagebox.showerror("Error", f"An error occurred: {e}")
 
+class UpdateUserRoleWindow:
+    def __init__(self, root, conn):
+        self.root = root
+        self.conn = conn
+
+        self.update_user_role_window = tk.Toplevel(root)
+        self.update_user_role_window.title("Update User Role")
+
+        # Label and Combobox for User Login
+        self.user_login_label = tk.Label(self.update_user_role_window, text="User Login:")
+        self.user_login_var = tk.StringVar()
+        self.user_login_combobox = ttk.Combobox(self.update_user_role_window, textvariable=self.user_login_var)
+        self.user_login_label.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
+        self.user_login_combobox.grid(row=0, column=1, padx=10, pady=10, sticky=tk.W)
+
+        # Label and Combobox for User Role
+        self.user_role_label = tk.Label(self.update_user_role_window, text="User Role:")
+        self.user_role_var = tk.StringVar()
+        self.user_role_combobox = ttk.Combobox(
+            self.update_user_role_window,
+            textvariable=self.user_role_var,
+            values=["Admin", "Moderator", "User"]
+        )
+        self.user_role_label.grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
+        self.user_role_combobox.grid(row=1, column=1, padx=10, pady=10, sticky=tk.W)
+
+        # Button to update user role
+        self.update_button = tk.Button(self.update_user_role_window, text="Update Role", command=self.update_role)
+        self.update_button.grid(row=2, column=0, columnspan=2, pady=20)
+
+        # Fetch user data for Combobox
+        self.fetch_user_data()
+
+    def fetch_user_data(self):
+        try:
+            with self.conn.cursor() as cursor:
+                query = "SELECT id_user, user_login, role_id FROM users"
+                cursor.execute(query)
+                user_data = cursor.fetchall()
+
+            # Update Combobox with user logins
+            logins = [f"{login} ({role})" for _, login, role in user_data]
+            self.user_login_combobox["values"] = logins
+
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred while fetching user data: {e}")
+
+    def update_role(self):
+        try:
+            selected_login = self.user_login_var.get()
+            user_id = selected_login.split(" ")[0]  # Extract user ID from the selected login
+            user_role = self.user_role_var.get()
+            tmp = {"Admin":1, "User":2, "Moderator":4}
+            user_role = tmp.get(user_role)
+
+
+            with self.conn.cursor() as cursor:
+                # Assuming you have a table named "users" with columns "id" and "role"
+                update_query = "UPDATE users SET role_id = %s WHERE user_login = %s"
+                cursor.execute(update_query, (user_role, user_id))
+
+            self.conn.commit()
+            messagebox.showinfo("Success", "User role updated successfully!")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred: {e}")
 class AdminMainWindow:
     def __init__(self, root, conn, admin_id):
         self.root = root
@@ -299,7 +365,7 @@ class AdminMainWindow:
 
         self.button_load_data = tk.Button(self.root, text="Load data", command=self.load_data_1)
         self.button_create_offer = tk.Button(self.root, text="Create Offer", command=self.create_offer)
-        self.button_update_user = tk.Button(self.root, text="Update User", command=self.update_user)
+        self.button_update_user = tk.Button(self.root, text="Update User", command=self.update_user_role)
         self.button_delete_user = tk.Button(self.root, text="Delete User", command=self.delete_user)
         self.button_add_review = tk.Button(self.root, text="Add Review", command=self.add_review)
 
@@ -322,8 +388,7 @@ class AdminMainWindow:
         load_data(self.root, self.conn, 'offers')
 
     def update_user_role(self):
-        # Реализация обновления пользователя
-        pass
+        update_user_role_window = UpdateUserRoleWindow(root, self.conn)
 
     def delete_user(self):
         # Реализация удаления пользователя
